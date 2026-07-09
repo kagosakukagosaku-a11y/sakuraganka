@@ -10,10 +10,10 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --sakura:    #E8B4C0;
-      --sakura-lt: #F7DDE4;
-      --sakura-dk: #C47A8A;
-      --ink:       #2A2426; 
+      --sakura:    #C4A0B8;
+      --sakura-lt: #EDE0EA;
+      --sakura-dk: #9B6B8A;
+      --ink:       #2A2426;
       --muted:     #6B5B5E;
       --bg:        #FDFBFC;
       --white:     #FFFFFF;
@@ -298,7 +298,12 @@
       color: var(--sakura);
       font-weight: 400;
     }
-    td:first-child { text-align: left; color: rgba(255,255,255,0.7); }
+    tbody tr { background: rgba(196, 160, 184, 0.25); }
+    tbody tr:hover { background: rgba(196, 160, 184, 0.40); }
+    td:first-child { text-align: left; color: #ffffff; font-weight: 600; }
+    tbody tr.sunday { background: rgba(120, 120, 120, 0.25); }
+    tbody tr.sunday:hover { background: rgba(120, 120, 120, 0.40); }
+    tbody tr.sunday td:first-child { color: #cccccc; }
     .dot { color: var(--sakura); font-size: 1.1rem; }
     .dash { color: rgba(255,255,255,0.25); }
 
@@ -438,7 +443,7 @@
       <!-- 管理者ログインエリア -->
       <div style="margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--divider);">
         <div id="login-area">
-          <button onclick="showLogin()" style="width:100%;background:none;border:1px solid var(--divider);border-radius:4px;padding:0.4rem;font-size:0.72rem;color:var(--muted);cursor:pointer;letter-spacing:0.06em;">🔒 受付状況を編集する（スタッフ専用）</button>
+          <div id="secret-trigger" style="width:100%;height:20px;cursor:default;"></div>
         </div>
         <div id="password-area" style="display:none;">
           <input type="password" id="admin-pw" placeholder="パスワードを入力" style="width:100%;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 0.6rem;font-size:0.8rem;margin-bottom:0.4rem;outline:none;">
@@ -457,6 +462,7 @@
             <button onclick="setStatus('morning')"   style="background:#F3E5F5;color:#6A1B9A;border:none;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.75rem;cursor:pointer;text-align:left;">🟣 午前のみ診療</button>
             <button onclick="setStatus('afternoon')" style="background:#E8EAF6;color:#283593;border:none;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.75rem;cursor:pointer;text-align:left;">🔷 午後のみ診療</button>
             <button onclick="setStatus('temporary')" style="background:#FBE9E7;color:#BF360C;border:none;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.75rem;cursor:pointer;text-align:left;">⚠️ 臨時休診</button>
+            <button onclick="setStatus('end')"       style="background:#F3F3F3;color:#555;border:none;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.75rem;cursor:pointer;text-align:left;">⛔ 受付終了</button>
             <button onclick="setStatus('closed')"    style="background:#FFEBEE;color:#C62828;border:none;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.75rem;cursor:pointer;text-align:left;">🔴 本日休診</button>
           </div>
           <button onclick="logout()" style="width:100%;margin-top:0.6rem;background:none;border:1px solid var(--divider);border-radius:4px;padding:0.35rem;font-size:0.72rem;color:var(--muted);cursor:pointer;">🔓 ログアウト</button>
@@ -466,6 +472,23 @@
 
     <script>
       const ADMIN_PASSWORD = 'sakura2000'; // ← パスワードはここを変更してください
+
+      // ── 秘密のトリガー：キーボード「saku」入力 または カードを3秒長押し ──
+      let secretBuffer = '';
+      document.addEventListener('keydown', function(e) {
+        secretBuffer += e.key.toLowerCase();
+        if (secretBuffer.length > 3) secretBuffer = secretBuffer.slice(-3);
+        if (secretBuffer === 'aki') { secretBuffer = ''; showLogin(); }
+      });
+
+      // スマホ用：受付カードを3秒長押しでログイン画面表示
+      let longPressTimer = null;
+      const card = document.getElementById('status-card');
+      card.addEventListener('touchstart', function() {
+        longPressTimer = setTimeout(function() { showLogin(); }, 3000);
+      });
+      card.addEventListener('touchend',   function() { clearTimeout(longPressTimer); });
+      card.addEventListener('touchmove',  function() { clearTimeout(longPressTimer); });
 
       function showLogin() {
         document.getElementById('login-area').style.display = 'none';
@@ -510,6 +533,7 @@
           morning:   { text:'午前のみ', bg:'#F3E5F5', color:'#6A1B9A', msg:'本日は午前のみの診療となります（9:30〜12:00）。' },
           afternoon: { text:'午後のみ', bg:'#E8EAF6', color:'#283593', msg:'本日は午後のみの診療となります（16:00〜18:00）。' },
           temporary: { text:'臨時休診', bg:'#FBE9E7', color:'#BF360C', msg:'本日は臨時休診となります。ご不便をおかけし申し訳ありません。' },
+          end:       { text:'受付終了', bg:'#F3F3F3', color:'#555555', msg:'本日の受付は終了しました。またのご来院をお待ちしております。' },
           closed:    { text:'本日休診', bg:'#FFEBEE', color:'#C62828', msg:'本日は休診日です。ご不便をおかけします。' },
         };
         const s = map[type];
@@ -533,7 +557,7 @@
   <!-- スタッフ編集パネル -->
   <div style="margin-top:2rem;max-width:700px;">
     <div id="news-login-area">
-      <button onclick="showNewsLogin()" style="background:none;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 1.2rem;font-size:0.75rem;color:var(--muted);cursor:pointer;letter-spacing:0.06em;">🔒 お知らせを編集する（スタッフ専用）</button>
+      <div id="news-secret-trigger" style="width:100%;height:20px;cursor:default;"></div>
     </div>
     <div id="news-password-area" style="display:none;max-width:320px;">
       <input type="password" id="news-admin-pw" placeholder="パスワードを入力" style="width:100%;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 0.6rem;font-size:0.8rem;margin-bottom:0.4rem;outline:none;">
@@ -598,6 +622,25 @@
         newsItems.splice(index, 1);
         renderNews();
       }
+    }
+
+    // ── お知らせ秘密トリガー：キーボード「saku」入力 または お知らせ欄タイトルを3秒長押し ──
+    let newsSecretBuffer = '';
+    document.addEventListener('keydown', function(e) {
+      newsSecretBuffer += e.key.toLowerCase();
+      if (newsSecretBuffer.length > 3) newsSecretBuffer = newsSecretBuffer.slice(-3);
+      if (newsSecretBuffer === 'aki') { newsSecretBuffer = ''; showNewsLogin(); }
+    });
+
+    // スマホ用：お知らせタイトルを3秒長押し
+    let newsLongPressTimer = null;
+    const newsTitle = document.querySelector('#news .section-title');
+    if (newsTitle) {
+      newsTitle.addEventListener('touchstart', function() {
+        newsLongPressTimer = setTimeout(function() { showNewsLogin(); }, 3000);
+      });
+      newsTitle.addEventListener('touchend',  function() { clearTimeout(newsLongPressTimer); });
+      newsTitle.addEventListener('touchmove', function() { clearTimeout(newsLongPressTimer); });
     }
 
     function showNewsLogin() {
@@ -697,7 +740,7 @@
           <tr><td>木曜日</td><td class="dot">●</td><td class="dot">●</td></tr>
           <tr><td>金曜日</td><td class="dot">●</td><td class="dot">●</td></tr>
           <tr><td>土曜日</td><td class="dot">●</td><td class="dash">—</td></tr>
-          <tr><td>日曜日</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr class="sunday"><td>日曜日</td><td class="dash">—</td><td class="dash">—</td></tr>
         </tbody>
       </table>
       <ul class="hours-notes">
