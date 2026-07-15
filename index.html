@@ -16,7 +16,7 @@
       --ink:       #2A2426;
       --muted:     #6B5B5E;
       --bg:        #FDFBFC;
-      --white:     #FFFFFF; 
+      --white:     #FFFFFF;
       --divider:   #EDE0E3;
       --green:     #4A7C6F;
       --serif:     'Noto Serif JP', serif;
@@ -370,9 +370,41 @@
     @media (max-width: 768px) {
       .hero { grid-template-columns: 1fr; }
       .hero-visual { display: none; }
+      .hero-card-mobile { display: block; }
       .nav-links { display: none; }
       .hours-layout { grid-template-columns: 1fr; gap: 2.5rem; }
       footer { flex-direction: column; text-align: center; }
+      .hero-text {
+        position: relative;
+        background: linear-gradient(135deg, var(--sakura-lt) 0%, #F0E8F0 100%);
+        overflow: hidden;
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .mobile-petal {
+        display: block;
+      }
+    }
+    @media (min-width: 769px) {
+      .hero-card-mobile { display: none; }
+      .mobile-petal { display: none; }
+    }
+    .mobile-petal {
+      position: absolute;
+      border-radius: 50% 0 50% 0;
+      background: var(--sakura);
+      opacity: 0.35;
+      animation: drift linear infinite;
+      pointer-events: none;
+    }
+    .hero-card-mobile {
+      margin: 0 clamp(1.5rem, 5vw, 5rem) 2rem;
+      background: var(--white);
+      border-radius: 4px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(42,36,38,0.1);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -397,6 +429,12 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-text">
+    <!-- スマホ用花びら -->
+    <div class="mobile-petal" style="width:20px;height:20px;left:10%;animation-duration:7s;animation-delay:0s;"></div>
+    <div class="mobile-petal" style="width:14px;height:14px;left:30%;animation-duration:9s;animation-delay:1s;"></div>
+    <div class="mobile-petal" style="width:18px;height:18px;left:55%;animation-duration:6s;animation-delay:2s;"></div>
+    <div class="mobile-petal" style="width:12px;height:12px;left:75%;animation-duration:8s;animation-delay:0.5s;"></div>
+    <div class="mobile-petal" style="width:16px;height:16px;left:88%;animation-duration:10s;animation-delay:3s;"></div>
     <p class="hero-clinic-name">医療法人さくら眼科</p>
     <p class="hero-eyebrow">SAKURA EYE CLINIC &ensp;／&ensp; 開設 2000年</p>
     <h1 class="hero-title">
@@ -407,7 +445,7 @@
       鹿児島市吉野で、地域の皆さまの眼の健康をサポートし続けて25年。<br>
       白内障・緑内障・網膜疾患から日常の視力管理まで、幅広く対応しています。
     </p>
-    <a href="#status-card" class="btn btn-primary">受付状況を確認する →</a>
+    <button type="button" onclick="scrollToStatus()" class="btn btn-primary" style="border:none;font-family:inherit;cursor:pointer;">受付状況を確認する →</button>
   </div>
 
   <div class="hero-visual">
@@ -443,7 +481,9 @@
       <!-- 管理者ログインエリア -->
       <div style="margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--divider);">
         <div id="login-area">
-          <div id="secret-trigger" style="width:100%;height:20px;cursor:default;"></div>
+          <div style="text-align:right;">
+            <button id="sakura-btn-pc" onclick="handleSakuraTapPC()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:0.4rem 0.6rem;opacity:0.3;">🌸</button>
+          </div>
         </div>
         <div id="password-area" style="display:none;">
           <input type="password" id="admin-pw" placeholder="パスワードを入力" style="width:100%;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 0.6rem;font-size:0.8rem;margin-bottom:0.4rem;outline:none;">
@@ -471,6 +511,14 @@
     </div>
 
     <script>
+      // 「受付状況を確認する」ボタン：PC用/スマホ用どちらが表示されているかを判定してスクロール
+      function scrollToStatus() {
+        const mobileCard = document.getElementById('status-card-mobile');
+        const isMobileVisible = mobileCard && window.getComputedStyle(mobileCard).display !== 'none';
+        const target = isMobileVisible ? mobileCard : document.getElementById('status-card');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
       const ADMIN_PASSWORD = 'sakura2000'; // ← パスワードはここを変更してください
 
       // ── 秘密のトリガー：キーボード「saku」入力 または カードを3秒長押し ──
@@ -490,6 +538,18 @@
       card.addEventListener('touchend',   function() { clearTimeout(longPressTimer); });
       card.addEventListener('touchmove',  function() { clearTimeout(longPressTimer); });
 
+      // PC用：🌸を3回タップでログイン
+      let sakuraTapCountPC = 0, sakuraTapTimerPC = null;
+      function handleSakuraTapPC() {
+        sakuraTapCountPC++;
+        clearTimeout(sakuraTapTimerPC);
+        sakuraTapTimerPC = setTimeout(function() { sakuraTapCountPC = 0; }, 2000);
+        if (sakuraTapCountPC >= 3) {
+          sakuraTapCountPC = 0;
+          showLogin();
+        }
+      }
+
       function showLogin() {
         document.getElementById('login-area').style.display = 'none';
         document.getElementById('password-area').style.display = 'block';
@@ -508,6 +568,7 @@
           document.getElementById('edit-area').style.display = 'block';
           document.getElementById('admin-pw').value = '';
           document.getElementById('pw-error').style.display = 'none';
+          localStorage.setItem('sakuraAdminLoggedIn', '1');
         } else {
           document.getElementById('pw-error').style.display = 'block';
         }
@@ -515,6 +576,7 @@
       function logout() {
         document.getElementById('edit-area').style.display = 'none';
         document.getElementById('login-area').style.display = 'block';
+        localStorage.removeItem('sakuraAdminLoggedIn');
       }
       // Enterキーでもログイン可能に
       document.addEventListener('DOMContentLoaded', function() {
@@ -541,12 +603,147 @@
         badge.style.background = s.bg;
         badge.style.color = s.color;
         msg.textContent = s.msg;
+        localStorage.setItem('sakuraStatus', type);
       }
+
+      // ページを開いたときに、以前の状態（ログイン状態・受付状況）を復元
+      document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem('sakuraAdminLoggedIn') === '1') {
+          document.getElementById('login-area').style.display = 'none';
+          document.getElementById('password-area').style.display = 'none';
+          document.getElementById('edit-area').style.display = 'block';
+        }
+        const savedStatus = localStorage.getItem('sakuraStatus');
+        if (savedStatus) setStatus(savedStatus);
+      });
     </script>
   </div>
 </section>
 
-<!-- NEWS -->
+<!-- スマホ用 受付状況カード -->
+<div class="hero-card-mobile" id="status-card-mobile">
+  <p class="hero-card-title">本日の診療</p>
+  <div class="status-row">
+    <span class="label">診療状況</span>
+    <span class="value"><span id="status-badge-mobile" class="badge-open">受付中</span></span>
+  </div>
+  <div class="status-row">
+    <span class="label">メッセージ</span>
+    <span class="value" id="status-message-mobile" style="font-size:0.8rem;color:var(--muted);">通常どおり診療しています</span>
+  </div>
+  <div class="status-row">
+    <span class="label">休診日</span>
+    <span class="value" style="font-size:0.78rem;color:var(--muted);">日曜・祝祭日・お盆・年末年始</span>
+  </div>
+  <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--divider);">
+    <p style="font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">お電話でのお問い合わせ</p>
+    <a href="tel:0992955911" style="font-size:1.15rem;font-weight:500;color:var(--ink);text-decoration:none;letter-spacing:0.04em;">099-295-5911</a>
+    <p style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">〒892-0877 鹿児島市吉野二丁目6-10</p>
+  </div>
+  <!-- 管理者ログインエリア（スマホ用） -->
+  <div style="margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--divider);">
+    <div id="login-area-mobile">
+      <div style="text-align:right;">
+        <button id="sakura-btn-mobile" onclick="handleSakuraTap()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:0.6rem 0.9rem;opacity:0.3;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">🌸</button>
+      </div>
+    </div>
+    <div id="password-area-mobile" style="display:none;">
+      <input type="password" id="admin-pw-mobile" placeholder="パスワードを入力" style="width:100%;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 0.6rem;font-size:0.8rem;margin-bottom:0.4rem;outline:none;">
+      <div style="display:flex;gap:0.4rem;">
+        <button onclick="checkPasswordMobile()" style="flex:1;background:var(--sakura-dk);color:#fff;border:none;border-radius:4px;padding:0.45rem;font-size:0.78rem;cursor:pointer;">ログイン</button>
+        <button onclick="cancelLoginMobile()" style="flex:1;background:none;border:1px solid var(--divider);border-radius:4px;padding:0.45rem;font-size:0.78rem;cursor:pointer;color:var(--muted);">キャンセル</button>
+      </div>
+      <p id="pw-error-mobile" style="display:none;font-size:0.72rem;color:#C62828;margin-top:0.3rem;">パスワードが違います</p>
+    </div>
+    <div id="edit-area-mobile" style="display:none;">
+      <p style="font-size:0.68rem;color:var(--muted);margin-bottom:0.5rem;letter-spacing:0.06em;">▼ 受付状況を選択してください</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <button onclick="setStatusMobile('open')"      style="background:#E8F5E9;color:#2E7D32;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🟢 受付中（通常どおり診療）</button>
+        <button onclick="setStatusMobile('busy')"      style="background:#FFF8E1;color:#F57F17;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🟡 混雑中（お待ちいただく場合あり）</button>
+        <button onclick="setStatusMobile('break')"     style="background:#E3F2FD;color:#1565C0;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🔵 休憩中（午後より再開）</button>
+        <button onclick="setStatusMobile('morning')"   style="background:#F3E5F5;color:#6A1B9A;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🟣 午前のみ診療</button>
+        <button onclick="setStatusMobile('afternoon')" style="background:#E8EAF6;color:#283593;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🔷 午後のみ診療</button>
+        <button onclick="setStatusMobile('temporary')" style="background:#FBE9E7;color:#BF360C;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">⚠️ 臨時休診</button>
+        <button onclick="setStatusMobile('end')"       style="background:#F3F3F3;color:#555;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">⛔ 受付終了</button>
+        <button onclick="setStatusMobile('closed')"    style="background:#FFEBEE;color:#C62828;border:none;border-radius:4px;padding:0.5rem 0.8rem;font-size:0.85rem;cursor:pointer;text-align:left;">🔴 本日休診</button>
+      </div>
+      <button onclick="logoutMobile()" style="width:100%;margin-top:0.6rem;background:none;border:1px solid var(--divider);border-radius:4px;padding:0.35rem;font-size:0.72rem;color:var(--muted);cursor:pointer;">🔓 ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // スマホ用：🌸を3回タップでログイン
+  let sakuraTapCount = 0, sakuraTapTimer = null;
+  function handleSakuraTap() {
+    sakuraTapCount++;
+    clearTimeout(sakuraTapTimer);
+    sakuraTapTimer = setTimeout(function() { sakuraTapCount = 0; }, 2000);
+    if (sakuraTapCount >= 3) {
+      sakuraTapCount = 0;
+      showLoginMobile();
+    }
+  }
+
+  function showLoginMobile() {
+    document.getElementById('login-area-mobile').style.display = 'none';
+    document.getElementById('password-area-mobile').style.display = 'block';
+    document.getElementById('admin-pw-mobile').focus();
+  }
+  function cancelLoginMobile() {
+    document.getElementById('password-area-mobile').style.display = 'none';
+    document.getElementById('login-area-mobile').style.display = 'block';
+    document.getElementById('admin-pw-mobile').value = '';
+    document.getElementById('pw-error-mobile').style.display = 'none';
+  }
+  function checkPasswordMobile() {
+    if (document.getElementById('admin-pw-mobile').value === 'sakura2000') {
+      document.getElementById('password-area-mobile').style.display = 'none';
+      document.getElementById('edit-area-mobile').style.display = 'block';
+      document.getElementById('admin-pw-mobile').value = '';
+      document.getElementById('pw-error-mobile').style.display = 'none';
+      localStorage.setItem('sakuraAdminLoggedIn', '1');
+    } else {
+      document.getElementById('pw-error-mobile').style.display = 'block';
+    }
+  }
+  function logoutMobile() {
+    document.getElementById('edit-area-mobile').style.display = 'none';
+    document.getElementById('login-area-mobile').style.display = 'block';
+    localStorage.removeItem('sakuraAdminLoggedIn');
+  }
+  function setStatusMobile(type) {
+    const badge = document.getElementById('status-badge-mobile');
+    const msg   = document.getElementById('status-message-mobile');
+    const map = {
+      open:      { text:'受付中',   bg:'#E8F5E9', color:'#2E7D32', msg:'通常どおり診療しています' },
+      busy:      { text:'混雑中',   bg:'#FFF8E1', color:'#F57F17', msg:'ただいま混雑しております。お待ちいただく場合があります。' },
+      break:     { text:'休憩中',   bg:'#E3F2FD', color:'#1565C0', msg:'現在休憩中です。午後より診療を再開いたします。' },
+      morning:   { text:'午前のみ', bg:'#F3E5F5', color:'#6A1B9A', msg:'本日は午前のみの診療となります（9:30〜12:00）。' },
+      afternoon: { text:'午後のみ', bg:'#E8EAF6', color:'#283593', msg:'本日は午後のみの診療となります（16:00〜18:00）。' },
+      temporary: { text:'臨時休診', bg:'#FBE9E7', color:'#BF360C', msg:'本日は臨時休診となります。ご不便をおかけし申し訳ありません。' },
+      end:       { text:'受付終了', bg:'#F3F3F3', color:'#555555', msg:'本日の受付は終了しました。またのご来院をお待ちしております。' },
+      closed:    { text:'本日休診', bg:'#FFEBEE', color:'#C62828', msg:'本日は休診日です。ご不便をおかけします。' },
+    };
+    const s = map[type];
+    badge.textContent = s.text;
+    badge.style.background = s.bg;
+    badge.style.color = s.color;
+    msg.textContent = s.msg;
+    localStorage.setItem('sakuraStatus', type);
+  }
+
+  // ページを開いたときに、以前の状態（ログイン状態・受付状況）を復元
+  document.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('sakuraAdminLoggedIn') === '1') {
+      document.getElementById('login-area-mobile').style.display = 'none';
+      document.getElementById('password-area-mobile').style.display = 'none';
+      document.getElementById('edit-area-mobile').style.display = 'block';
+    }
+    const savedStatusMobile = localStorage.getItem('sakuraStatus');
+    if (savedStatusMobile) setStatusMobile(savedStatusMobile);
+  });
+</script>
 <section id="news">
   <p class="section-eyebrow">News &amp; Information</p>
   <h2 class="section-title">お知らせ</h2>
@@ -557,7 +754,9 @@
   <!-- スタッフ編集パネル -->
   <div style="margin-top:2rem;max-width:700px;">
     <div id="news-login-area">
-      <div id="news-secret-trigger" style="width:100%;height:20px;cursor:default;"></div>
+      <div style="text-align:right;">
+        <button id="sakura-btn-news" onclick="handleNewsSakuraTap()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:0.6rem 0.9rem;opacity:0.3;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">🌸</button>
+      </div>
     </div>
     <div id="news-password-area" style="display:none;max-width:320px;">
       <input type="password" id="news-admin-pw" placeholder="パスワードを入力" style="width:100%;border:1px solid var(--divider);border-radius:4px;padding:0.45rem 0.6rem;font-size:0.8rem;margin-bottom:0.4rem;outline:none;">
@@ -632,15 +831,16 @@
       if (newsSecretBuffer === 'aki') { newsSecretBuffer = ''; showNewsLogin(); }
     });
 
-    // スマホ用：お知らせタイトルを3秒長押し
-    let newsLongPressTimer = null;
-    const newsTitle = document.querySelector('#news .section-title');
-    if (newsTitle) {
-      newsTitle.addEventListener('touchstart', function() {
-        newsLongPressTimer = setTimeout(function() { showNewsLogin(); }, 3000);
-      });
-      newsTitle.addEventListener('touchend',  function() { clearTimeout(newsLongPressTimer); });
-      newsTitle.addEventListener('touchmove', function() { clearTimeout(newsLongPressTimer); });
+    // 🌸を3回タップでお知らせ編集ログイン
+    let newsSakuraTapCount = 0, newsSakuraTapTimer = null;
+    function handleNewsSakuraTap() {
+      newsSakuraTapCount++;
+      clearTimeout(newsSakuraTapTimer);
+      newsSakuraTapTimer = setTimeout(function() { newsSakuraTapCount = 0; }, 2000);
+      if (newsSakuraTapCount >= 3) {
+        newsSakuraTapCount = 0;
+        showNewsLogin();
+      }
     }
 
     function showNewsLogin() {
